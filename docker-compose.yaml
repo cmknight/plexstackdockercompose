@@ -1,0 +1,92 @@
+version: "2.1"
+services:
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/new_york
+      - UMASK_SET=022 #optional   
+    volumes:
+      - ./volumes/radarr/config:/config
+      - ./volumes/data:/data
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/new_york
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./volumes/sonarr/config:/config
+      - ./volumes/data:/data
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./volumes/prowlarr/config:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped  
+  plex:
+    image: ghcr.io/linuxserver/plex
+    container_name: plex
+    ports:
+      - "32400:32400"
+      - "1900:1900"
+      - "3005:3005"
+      - "5353:5353"
+      - "8324:8324"
+      - "32410:32410"
+      - "32412:32412"
+      - "32413:32413"
+      - "32414:32414"
+      - "32469:32469"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      - UMASK_SET=022 #optional
+      #- PLEX_CLAIM=#####
+      # this is to get your server to be able to be accessible from plex.tv, if you want available 
+      # outside your home network
+      - ADVERTISE_IP=youripaddress:32400
+    volumes:
+      - ./volumes/plex/config:/config      
+      - ./volumes/data/media:/data/media
+    restart: unless-stopped
+  transmission-openvpn:
+        volumes:
+            - ./volumes/data/torrents:/data/torrents
+            - ./volumes/transmission/config:/config
+        environment:
+            - OPENVPN_PROVIDER=SURFSHARK
+            - OPENVPN_CONFIG=us-atl.prod.surfshark.com_udp
+            - OPENVPN_USERNAME=######
+            - OPENVPN_PASSWORD=######
+            - WEBPROXY_ENABLED=yes
+            # if your router assigns 192.168.x.x ip addresses, this will be 192.168.0.0/24 I believe
+            - LOCAL_NETWORK=10.0.0.0/16
+        cap_add:
+            - NET_ADMIN
+            - mknod        
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+        ports:
+          - "9091:9091"
+        restart: unless-stopped
+        image: docker.io/haugene/transmission-openvpn
